@@ -75,63 +75,41 @@
                 <span id="player">Karl Heinz</span>
                 <span id="callsign">[03]</span>&nbsp;&nbsp;<br />
                 <span id="agency">Linz RP Polizist</span>&nbsp;&nbsp;<br />                
-                <span style="padding:0px;margin:0px;" id="date-span"></span>
-                <span style="padding:0px;margin:0px;" id="time-span"></span>
-                <span style="padding:0px;margin:0px;" id="tz"></span>&nbsp;&nbsp;
+                <div id="datetime" class="datetime"></div>
             </div>
         </div>
     </body>
     
     <script>
-        //***edit this only for your information***
-        const player = " Karl Heinz";
-        const agency = " Linz RP Polizist";
-        const callsign = " 03";
-        //***        d edit this only         ***
-    
-        const monthNames = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+        // ***edit this only for your information***
+    const player = "Pascal Winkler";
+    const callsign = "[02]";
+    const agency = "Linz RP Polizist";
 
-        function init(){
-            clock();
-        };
+    $(document).ready(function() {
+        $('#player').text(player);
+        $('#callsign').text(callsign);
+        $('#agency').text(agency);
 
-        function clock(){
-            var d=new Date();
-            updateTime(d);
-            updateDate(d);
-            $('player', player);
-            $('agency', agency);
-            $('callsign', callsign);
-            var animate=setTimeout(clock,100);
-        };
-        
-        function updateDate(dt){
-            var day=dt.getEDTDate();
-            var month=monthNames[dt.getEDTMonth()];
-            var year=dt.getEDTFullYear();
-            var d_str = day + " " + month + " " + year;
-            document.getElementById('date-span').innerHTML = d_str;
-        };
-        
-        function updateTime(dt){
-            var h=dt.getEDTHours().toString();
-            var m=dt.getEDTMinutes().toString();
-            var s=dt.getEDTSeconds().toString();
-            h = h.length == 1 ? '0' + h : h;
-            m = m.length == 1 ? '0' + m : m;
-            s = s.length == 1 ? '0' + s : s;
-            var t_str = h + ":" + m + ":" + s + " ";
-            document.getElementById('time-span').innerHTML = t_str;
-        };
+        // Funktion zur Aktualisierung von Datum und Uhrzeit
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
 
-        function $(id,val){
-            if(val<10){
-                val='0'+val;
-            }
-            document.getElementById(id).innerHTML=val;
-        };
+            const date = now.toLocaleDateString('de-DE', dateOptions);
+            const time = now.toLocaleTimeString('de-DE', timeOptions);
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-        window.onload=init;
+            $('#date-span').text(date);
+            $('#time-span').text(time);
+            $('#tz').text(timezone);
+        }
+
+        // Aktualisiere die Zeit sofort und dann jede Sekunde
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+    });
     </script>
 
 </html>
