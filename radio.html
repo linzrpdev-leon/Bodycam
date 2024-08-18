@@ -7,106 +7,125 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: #eee;
+            background-color: #333;
         }
-        .section {
-            border: 1px solid #000;
+        .container {
+            background: #222;
+            border-radius: 15px;
+            padding: 20px;
+            width: 380px;
+            height: 500px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            color: #fff;
+        }
+        .display {
+            background: #000;
+            color: #0f0;
             padding: 10px;
-            width: 360px;
-            text-align: center;
-            background: #f0f0f0;
-            border-radius: 8px;
-            display: none;
-        }
-        .section.active {
-            display: block;
-        }
-        #messages {
-            border: 1px solid #000;
-            height: 150px;
-            overflow-y: scroll;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: #fff;
             border-radius: 5px;
+            height: 60px;
+            overflow-y: auto;
+            margin-bottom: 20px;
         }
-        .radio-controls {
-            text-align: center;
-            padding: 10px;
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        #startRecording, #stopRecording {
-            width: 100%;
-            padding: 10px;
-            background: #007BFF;
-            color: white;
+        .button {
+            background: #444;
+            color: #fff;
             border: none;
-            cursor: pointer;
             border-radius: 5px;
-            margin-top: 10px;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
         }
-        #startRecording:active, #stopRecording:active {
-            background: #0056b3;
+        .button:hover {
+            background: #555;
+        }
+        .button:active {
+            background: #666;
         }
         .keypad {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            margin-top: 10px;
+            gap: 10px;
         }
         .keypad button {
-            width: 50px;
-            height: 50px;
-            margin: 5px;
-            border: none;
             background: #007BFF;
             color: white;
-            font-size: 18px;
+            border: none;
             border-radius: 5px;
+            width: 60px;
+            height: 60px;
+            font-size: 20px;
             cursor: pointer;
         }
         .keypad button:active {
             background: #0056b3;
         }
+        .recording {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .recording button {
+            width: 60px;
+            height: 60px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            outline: none;
+        }
+        .recording button:active {
+            background: #cc0000;
+        }
     </style>
 </head>
 <body>
-    <div id="channelSelect" class="section active">
-        <h2>Kanal auswählen</h2>
-        <div class="keypad">
-            <button class="channel-button" data-channel="1">1</button>
-            <button class="channel-button" data-channel="2">2</button>
-            <button class="channel-button" data-channel="3">3</button>
-            <button class="channel-button" data-channel="4">4</button>
-        </div>
-    </div>
-
-    <div id="radio" class="section">
-        <div class="radio-controls">
-            <h1>Funkgerät Simulation</h1>
-            <div id="messages"></div>
-            <div class="keypad">
-                <button id="startRecording">Aufnahme starten</button>
-                <button id="stopRecording" disabled>Aufnahme stoppen</button>
+    <div class="container">
+        <div class="display" id="messages"></div>
+        <div class="buttons">
+            <div class="keypad" id="channelSelect">
+                <button class="channel-button" data-channel="1">1</button>
+                <button class="channel-button" data-channel="2">2</button>
+                <button class="channel-button" data-channel="3">3</button>
+                <button class="channel-button" data-channel="4">4</button>
+            </div>
+            <div class="recording">
+                <button id="recordButton">🛑</button>
             </div>
         </div>
     </div>
 
+    <audio id="staticSound" src="static_noise.mp3"></audio>
+    <audio id="beepSound" src="beep_tone.mp3"></audio>
+
     <script>
         const channelSelectDiv = document.getElementById('channelSelect');
-        const radioDiv = document.getElementById('radio');
-        const channelButtons = document.querySelectorAll('.channel-button');
         const messagesDiv = document.getElementById('messages');
-        const startRecordingButton = document.getElementById('startRecording');
-        const stopRecordingButton = document.getElementById('stopRecording');
+        const recordButton = document.getElementById('recordButton');
+
+        const staticSound = document.getElementById('staticSound');
+        const beepSound = document.getElementById('beepSound');
 
         let currentChannel = null;
         let mediaRecorder = null;
         let audioChunks = [];
+        let isRecording = false;
 
         const channels = {
             1: [],
@@ -115,16 +134,28 @@
             4: []
         };
 
+        function playStaticSound() {
+            staticSound.play();
+            setTimeout(() => staticSound.pause(), 2000); // Stop playing static sound after 2 seconds
+        }
+
+        function playBeepSound() {
+            beepSound.play();
+        }
+
         function displayMessages() {
             if (currentChannel !== null) {
                 messagesDiv.innerHTML = channels[currentChannel].map(msg => `<div>${msg}</div>`).join('');
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-                // Play the latest message automatically
+                // Play static sound and beep sound before playing the latest message
+                playStaticSound();
+
                 const lastMessage = channels[currentChannel].slice(-1)[0];
                 if (lastMessage && lastMessage.includes('[Audio Nachricht]')) {
                     const audioUrl = lastMessage.split('] ')[1];
                     const audio = new Audio(audioUrl);
+                    audio.onplay = playBeepSound; // Play beep sound when the message starts playing
                     audio.play();
                 }
             }
@@ -132,8 +163,6 @@
 
         function handleChannelSelection(channel) {
             currentChannel = channel;
-            channelSelectDiv.classList.remove('active');
-            radioDiv.classList.add('active');
             displayMessages();
         }
 
@@ -152,8 +181,8 @@
                     }
                 };
                 mediaRecorder.start();
-                startRecordingButton.disabled = true;
-                stopRecordingButton.disabled = false;
+                isRecording = true;
+                recordButton.textContent = '🛑'; // Stop icon
             } catch (error) {
                 console.error('Fehler beim Zugriff auf das Mikrofon:', error);
             }
@@ -162,20 +191,41 @@
         function stopRecording() {
             if (mediaRecorder) {
                 mediaRecorder.stop();
-                startRecordingButton.disabled = false;
-                stopRecordingButton.disabled = true;
+                isRecording = false;
+                recordButton.textContent = '🔴'; // Record icon
             }
         }
 
-        channelButtons.forEach(button => {
+        document.querySelectorAll('.channel-button').forEach(button => {
             button.addEventListener('click', () => {
                 const channel = button.getAttribute('data-channel');
                 handleChannelSelection(channel);
             });
         });
 
-        startRecordingButton.addEventListener('click', startRecording);
-        stopRecordingButton.addEventListener('click', stopRecording);
+        recordButton.addEventListener('mousedown', () => {
+            if (!isRecording) {
+                startRecording();
+            }
+        });
+
+        recordButton.addEventListener('mouseup', () => {
+            if (isRecording) {
+                stopRecording();
+            }
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.altKey && !isRecording) {
+                startRecording();
+            }
+        });
+
+        document.addEventListener('keyup', event => {
+            if (event.altKey && isRecording) {
+                stopRecording();
+            }
+        });
     </script>
 </body>
 </html>
