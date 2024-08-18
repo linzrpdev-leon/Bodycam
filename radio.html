@@ -6,7 +6,6 @@
     <title>Sepura Funkgerät Simulation</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
@@ -16,106 +15,56 @@
             background-color: #333;
         }
         .container {
-            background: #222;
-            border-radius: 15px;
-            padding: 20px;
+            position: relative;
             width: 380px;
             height: 500px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-            color: #fff;
         }
+        .container img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+        }
+        .button {
+            position: absolute;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        .button.channel-1 { top: 150px; left: 50px; width: 60px; height: 60px; }
+        .button.channel-2 { top: 150px; left: 120px; width: 60px; height: 60px; }
+        .button.channel-3 { top: 150px; left: 190px; width: 60px; height: 60px; }
+        .button.channel-4 { top: 150px; left: 260px; width: 60px; height: 60px; }
+        .button.record { bottom: 20px; left: 150px; width: 60px; height: 60px; }
         .display {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            width: calc(100% - 40px);
+            height: 60px;
             background: #000;
             color: #0f0;
             padding: 10px;
             border-radius: 5px;
-            height: 60px;
             overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        .buttons {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .button {
-            background: #444;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-        .button:hover {
-            background: #555;
-        }
-        .button:active {
-            background: #666;
-        }
-        .keypad {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-        }
-        .keypad button {
-            background: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            width: 60px;
-            height: 60px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        .keypad button:active {
-            background: #0056b3;
-        }
-        .recording {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .recording button {
-            width: 60px;
-            height: 60px;
-            background: #ff0000;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 24px;
-            cursor: pointer;
-            outline: none;
-        }
-        .recording button:active {
-            background: #cc0000;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <img src="sepura-radio.png" alt="Sepura Funkgerät">
+        <button class="button channel-1" data-channel="1"></button>
+        <button class="button channel-2" data-channel="2"></button>
+        <button class="button channel-3" data-channel="3"></button>
+        <button class="button channel-4" data-channel="4"></button>
+        <button class="button record" id="recordButton"></button>
         <div class="display" id="messages"></div>
-        <div class="buttons">
-            <div class="keypad" id="channelSelect">
-                <button class="channel-button" data-channel="1">1</button>
-                <button class="channel-button" data-channel="2">2</button>
-                <button class="channel-button" data-channel="3">3</button>
-                <button class="channel-button" data-channel="4">4</button>
-            </div>
-            <div class="recording">
-                <button id="recordButton">🛑</button>
-            </div>
-        </div>
     </div>
 
-    <audio id="staticSound" src="static_noise.mp3"></audio>
-    <audio id="beepSound" src="beep_tone.mp3"></audio>
+    <audio id="staticSound" src="https://example.com/static_noise.mp3"></audio>
+    <audio id="beepSound" src="sepura_radio.mp3"></audio>
 
     <script>
-        const channelSelectDiv = document.getElementById('channelSelect');
+        const buttons = document.querySelectorAll('.button');
         const messagesDiv = document.getElementById('messages');
         const recordButton = document.getElementById('recordButton');
 
@@ -182,7 +131,7 @@
                 };
                 mediaRecorder.start();
                 isRecording = true;
-                recordButton.textContent = '🛑'; // Stop icon
+                recordButton.style.backgroundColor = '#cc0000'; // Change color to indicate recording
             } catch (error) {
                 console.error('Fehler beim Zugriff auf das Mikrofon:', error);
             }
@@ -192,40 +141,12 @@
             if (mediaRecorder) {
                 mediaRecorder.stop();
                 isRecording = false;
-                recordButton.textContent = '🔴'; // Record icon
+                recordButton.style.backgroundColor = '#ff0000'; // Change color to indicate stop
             }
         }
 
-        document.querySelectorAll('.channel-button').forEach(button => {
+        buttons.forEach(button => {
             button.addEventListener('click', () => {
                 const channel = button.getAttribute('data-channel');
-                handleChannelSelection(channel);
-            });
-        });
-
-        recordButton.addEventListener('mousedown', () => {
-            if (!isRecording) {
-                startRecording();
-            }
-        });
-
-        recordButton.addEventListener('mouseup', () => {
-            if (isRecording) {
-                stopRecording();
-            }
-        });
-
-        document.addEventListener('keydown', event => {
-            if (event.altKey && !isRecording) {
-                startRecording();
-            }
-        });
-
-        document.addEventListener('keyup', event => {
-            if (event.altKey && isRecording) {
-                stopRecording();
-            }
-        });
-    </script>
-</body>
-</html>
+                if (channel) {
+                    handle
