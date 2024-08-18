@@ -21,6 +21,10 @@
             text-align: center;
             background: #f0f0f0;
             border-radius: 8px;
+            display: none;
+        }
+        .section.active {
+            display: block;
         }
         #messages {
             border: 1px solid #000;
@@ -31,11 +35,11 @@
             background: #fff;
             border-radius: 5px;
         }
-        #sendMessage {
-            width: calc(100% - 22px);
-            padding: 5px;
+        .radio-controls {
+            text-align: center;
+            padding: 10px;
         }
-        #sendButton {
+        #startRecording, #stopRecording {
             width: 100%;
             padding: 10px;
             background: #007BFF;
@@ -45,123 +49,42 @@
             border-radius: 5px;
             margin-top: 10px;
         }
-        #sendButton:active {
+        #startRecording:active, #stopRecording:active {
             background: #0056b3;
-        }
-        #login, #channelLogin {
-            display: none;
-        }
-        .channel-buttons {
-            margin: 10px 0;
-        }
-        .channel-button {
-            width: 100%;
-            padding: 10px;
-            background: #007BFF;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 5px;
-        }
-        .channel-button:active {
-            background: #0056b3;
-        }
-        .radio-body {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 300px;
-            border: 2px solid #000;
-            border-radius: 10px;
-            background: #333;
-            color: white;
-        }
-        .radio-header {
-            background: #000;
-            padding: 10px;
-            border-radius: 10px 10px 0 0;
-        }
-        .radio-controls {
-            text-align: center;
-            padding: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="login" class="section">
-        <h2>Login</h2>
-        <label for="username">Benutzername:</label>
-        <input type="text" id="username" placeholder="Benutzername">
-        <br>
-        <label for="password">Passwort:</label>
-        <input type="password" id="password" placeholder="Passwort">
-        <br>
-        <button id="loginButton">Anmelden</button>
-        <div id="loginError" style="color: red; display: none;">Ungültiger Benutzername oder Passwort</div>
-    </div>
-
-    <div id="channelLogin" class="section">
-        <h2>Kanal Login</h2>
-        <label for="channelSelect">Kanal auswählen:</label>
+    <div id="channelSelect" class="section active">
+        <h2>Kanal auswählen</h2>
         <div class="channel-buttons">
             <button class="channel-button" data-channel="1">Kanal 1</button>
             <button class="channel-button" data-channel="2">Kanal 2</button>
             <button class="channel-button" data-channel="3">Kanal 3</button>
             <button class="channel-button" data-channel="4">Kanal 4</button>
         </div>
-        <br>
-        <label for="channelUsername">Benutzername:</label>
-        <input type="text" id="channelUsername" placeholder="Benutzername">
-        <br>
-        <label for="channelPassword">Passwort:</label>
-        <input type="password" id="channelPassword" placeholder="Passwort">
-        <br>
-        <button id="channelLoginButton">Anmelden</button>
-        <div id="channelLoginError" style="color: red; display: none;">Ungültiger Benutzername oder Passwort für diesen Kanal</div>
     </div>
 
     <div id="radio" class="section">
-        <div class="radio-body">
-            <div class="radio-header">
-                <h1>Funkgerät Simulation</h1>
-            </div>
-            <div class="radio-controls">
-                <div id="messages"></div>
-                <input type="text" id="sendMessage" placeholder="Nachricht eingeben" disabled>
-                <button id="sendButton">Funken halten</button>
-            </div>
+        <div class="radio-controls">
+            <h1>Funkgerät Simulation</h1>
+            <div id="messages"></div>
+            <button id="startRecording">Aufnahme starten</button>
+            <button id="stopRecording" disabled>Aufnahme stoppen</button>
         </div>
     </div>
 
     <script>
-        const loginDiv = document.getElementById('login');
-        const channelLoginDiv = document.getElementById('channelLogin');
+        const channelSelectDiv = document.getElementById('channelSelect');
         const radioDiv = document.getElementById('radio');
-        const loginButton = document.getElementById('loginButton');
-        const channelLoginButton = document.getElementById('channelLoginButton');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const loginError = document.getElementById('loginError');
         const channelButtons = document.querySelectorAll('.channel-button');
-        const channelUsernameInput = document.getElementById('channelUsername');
-        const channelPasswordInput = document.getElementById('channelPassword');
-        const channelLoginError = document.getElementById('channelLoginError');
         const messagesDiv = document.getElementById('messages');
-        const sendButton = document.getElementById('sendButton');
-        const sendMessage = document.getElementById('sendMessage');
+        const startRecordingButton = document.getElementById('startRecording');
+        const stopRecordingButton = document.getElementById('stopRecording');
 
-        const users = {
-            'user1': 'password1',
-            'user2': 'password2'
-        };
-
-        const channelUsers = {
-            1: { 'user1': 'pass1' },
-            2: { 'user2': 'pass2' },
-            3: { 'user1': 'pass3' },
-            4: { 'user1': 'pass4', 'user2': 'pass5' }
-        };
+        let currentChannel = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
 
         const channels = {
             1: [],
@@ -170,9 +93,6 @@
             4: []
         };
 
-        let currentChannel = null;
-        let typing = false;
-
         function displayMessages() {
             if (currentChannel !== null) {
                 messagesDiv.innerHTML = channels[currentChannel].map(msg => `<div>${msg}</div>`).join('');
@@ -180,80 +100,53 @@
             }
         }
 
-        function handleLogin() {
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value.trim();
+        function handleChannelSelection(channel) {
+            currentChannel = channel;
+            channelSelectDiv.classList.remove('active');
+            radioDiv.classList.add('active');
+            displayMessages();
+        }
 
-            if (users[username] && users[username] === password) {
-                loginDiv.style.display = 'none';
-                channelLoginDiv.style.display = 'block';
-                loginError.style.display = 'none';
-            } else {
-                loginError.style.display = 'block';
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                    if (mediaRecorder.state === 'inactive') {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        channels[currentChannel].push(`Kanal ${currentChannel}: [Audio Nachricht]`);
+                        displayMessages();
+                    }
+                };
+                mediaRecorder.start();
+                startRecordingButton.disabled = true;
+                stopRecordingButton.disabled = false;
+            } catch (error) {
+                console.error('Fehler beim Zugriff auf das Mikrofon:', error);
             }
         }
 
-        function handleChannelLogin(channel) {
-            const username = channelUsernameInput.value.trim();
-            const password = channelPasswordInput.value.trim();
-
-            if (channelUsers[channel] && channelUsers[channel][username] === password) {
-                currentChannel = channel;
-                channelLoginDiv.style.display = 'none';
-                radioDiv.style.display = 'block';
-                channelLoginError.style.display = 'none';
-                displayMessages();
-            } else {
-                channelLoginError.style.display = 'block';
+        function stopRecording() {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                startRecordingButton.disabled = false;
+                stopRecordingButton.disabled = true;
+                audioChunks = [];
             }
         }
-
-        function startTyping() {
-            if (!typing && currentChannel !== null) {
-                typing = true;
-                sendMessage.disabled = false;
-                sendMessage.focus();
-            }
-        }
-
-        function stopTyping() {
-            if (typing) {
-                typing = false;
-                const message = sendMessage.value.trim();
-                if (message) {
-                    channels[currentChannel].push(`Kanal ${currentChannel}: ${message}`);
-                    sendMessage.value = '';
-                    displayMessages();
-                }
-                sendMessage.disabled = true;
-            }
-        }
-
-        loginButton.addEventListener('click', handleLogin);
 
         channelButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const channel = button.getAttribute('data-channel');
-                handleChannelLogin(channel);
+                handleChannelSelection(channel);
             });
         });
 
-        channelLoginButton.addEventListener('click', () => {
-            if (currentChannel !== null) {
-                handleChannelLogin(currentChannel);
-            }
-        });
-
-        sendButton.addEventListener('mousedown', startTyping);
-        sendButton.addEventListener('mouseup', stopTyping);
-        sendButton.addEventListener('touchstart', startTyping);
-        sendButton.addEventListener('touchend', stopTyping);
-
-        document.addEventListener('keydown', event => {
-            if (event.altKey && event.code === 'KeyS') {
-                startTyping();
-            }
-        });
-
-        document.addEventListener('keyup', event => {
-            if
+        startRecordingButton.addEventListener('click', startRecording);
+        stopRecordingButton.addEventListener('click', stopRecording);
+    </script>
+</body>
+</html>
