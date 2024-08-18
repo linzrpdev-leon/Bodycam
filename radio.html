@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Funkgerät Simulation</title>
+    <title>Sepura Funkgerät Simulation</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,16 +52,36 @@
         #startRecording:active, #stopRecording:active {
             background: #0056b3;
         }
+        .keypad {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .keypad button {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            border: none;
+            background: #007BFF;
+            color: white;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .keypad button:active {
+            background: #0056b3;
+        }
     </style>
 </head>
 <body>
     <div id="channelSelect" class="section active">
         <h2>Kanal auswählen</h2>
-        <div class="channel-buttons">
-            <button class="channel-button" data-channel="1">Kanal 1</button>
-            <button class="channel-button" data-channel="2">Kanal 2</button>
-            <button class="channel-button" data-channel="3">Kanal 3</button>
-            <button class="channel-button" data-channel="4">Kanal 4</button>
+        <div class="keypad">
+            <button class="channel-button" data-channel="1">1</button>
+            <button class="channel-button" data-channel="2">2</button>
+            <button class="channel-button" data-channel="3">3</button>
+            <button class="channel-button" data-channel="4">4</button>
         </div>
     </div>
 
@@ -69,8 +89,10 @@
         <div class="radio-controls">
             <h1>Funkgerät Simulation</h1>
             <div id="messages"></div>
-            <button id="startRecording">Aufnahme starten</button>
-            <button id="stopRecording" disabled>Aufnahme stoppen</button>
+            <div class="keypad">
+                <button id="startRecording">Aufnahme starten</button>
+                <button id="stopRecording" disabled>Aufnahme stoppen</button>
+            </div>
         </div>
     </div>
 
@@ -97,6 +119,14 @@
             if (currentChannel !== null) {
                 messagesDiv.innerHTML = channels[currentChannel].map(msg => `<div>${msg}</div>`).join('');
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                // Play the latest message automatically
+                const lastMessage = channels[currentChannel].slice(-1)[0];
+                if (lastMessage && lastMessage.includes('[Audio Nachricht]')) {
+                    const audioUrl = lastMessage.split('] ')[1];
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                }
             }
         }
 
@@ -116,9 +146,9 @@
                     if (mediaRecorder.state === 'inactive') {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                         const audioUrl = URL.createObjectURL(audioBlob);
-                        const audio = new Audio(audioUrl);
-                        channels[currentChannel].push(`Kanal ${currentChannel}: [Audio Nachricht]`);
+                        channels[currentChannel].push(`Kanal ${currentChannel}: [Audio Nachricht] ${audioUrl}`);
                         displayMessages();
+                        audioChunks = [];
                     }
                 };
                 mediaRecorder.start();
@@ -134,7 +164,6 @@
                 mediaRecorder.stop();
                 startRecordingButton.disabled = false;
                 stopRecordingButton.disabled = true;
-                audioChunks = [];
             }
         }
 
