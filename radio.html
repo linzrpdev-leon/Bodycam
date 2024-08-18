@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sepura Funkgerät Nachbau</title>
+    <title>Sepura Funkgerät Simulation</title>
     <style>
         body {
             margin: 0;
@@ -17,42 +17,49 @@
         }
         .radio-container {
             position: relative;
-            width: 200px;
-            height: 500px;
+            width: 250px;
+            height: 600px;
             background-color: #2e2e2e;
-            border-radius: 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.7);
             border: 3px solid #444;
         }
         .display {
-            width: 160px;
-            height: 70px;
-            background-color: #222;
+            width: 200px;
+            height: 80px;
+            background-color: #000;
             color: #0f0;
-            margin: 20px auto;
+            margin: 30px auto;
             padding: 10px;
             border-radius: 5px;
             border: 2px solid #555;
             text-align: center;
-            font-size: 16px;
+            font-size: 18px;
             box-shadow: inset 0px 0px 5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .display.off {
+            background-color: #000;
+            color: #000;
         }
         .keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            padding: 20px;
+            padding: 10px 20px;
             justify-items: center;
         }
         .key {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             background-color: #444;
             color: #fff;
-            border-radius: 10px;
+            border-radius: 5px;
             text-align: center;
-            line-height: 50px;
-            font-size: 18px;
+            line-height: 60px;
+            font-size: 20px;
             cursor: pointer;
             box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
             transition: background-color 0.2s;
@@ -62,10 +69,10 @@
         }
         .ptt-button {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            width: 120px;
+            width: 140px;
             height: 50px;
             background-color: #cc0000;
             color: white;
@@ -80,12 +87,54 @@
         .ptt-button:active {
             background-color: #ff0000;
         }
+        .power-button {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            background-color: #333;
+            color: white;
+            font-size: 18px;
+            border-radius: 25px;
+            text-align: center;
+            line-height: 50px;
+            cursor: pointer;
+            box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.2s;
+        }
+        .power-button.on {
+            background-color: #28a745;
+        }
+        .power-button.off {
+            background-color: #cc0000;
+        }
+        .startup-sequence {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f0;
+            font-size: 18px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .startup-sequence.active {
+            opacity: 1;
+        }
+        .startup-sequence.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="radio-container">
-        <div class="display" id="display">Kanal 1</div>
-        <div class="keypad">
+        <div class="power-button off" id="powerButton">Ein</div>
+        <div class="display off" id="display">Kanal 1</div>
+        <div class="startup-sequence" id="startupSequence">Stadt/Wache Linz<br>Startet...</div>
+        <div class="keypad" id="keypad">
             <div class="key" data-channel="1">1</div>
             <div class="key" data-channel="2">2</div>
             <div class="key" data-channel="3">3</div>
@@ -102,40 +151,145 @@
     <script>
         const display = document.getElementById('display');
         const pttButton = document.getElementById('pttButton');
+        const powerButton = document.getElementById('powerButton');
+        const keypad = document.getElementById('keypad');
+        const startupSequence = document.getElementById('startupSequence');
         const keys = document.querySelectorAll('.key');
-
         let currentChannel = 1;
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let isOn = false;
+
+        const channels = {
+            1: [],
+            2: [],
+            3: [],
+            4: [],
+            5: [],
+            6: [],
+            7: [],
+            8: [],
+            9: []
+        };
 
         keys.forEach(key => {
             key.addEventListener('click', () => {
-                currentChannel = key.dataset.channel;
-                display.textContent = `Kanal ${currentChannel}`;
+                if (isOn) {
+                    currentChannel = key.dataset.channel;
+                    display.textContent = `Kanal ${currentChannel}`;
+                }
             });
         });
 
-        pttButton.addEventListener('mousedown', () => {
-            console.log(`Sende auf Kanal ${currentChannel}`);
-            // Hier könnte eine Funktion eingebunden werden, um die Aufnahme zu starten
+        powerButton.addEventListener('click', () => {
+            isOn = !isOn;
+            if (isOn) {
+                startupSequence.classList.add('active');
+                powerButton.textContent = "Aus";
+                powerButton.classList.remove('off');
+                powerButton.classList.add('on');
+                setTimeout(() => {
+                    startupSequence.classList.remove('active');
+                    startupSequence.classList.add('hidden');
+                    display.classList.remove('off');
+                    display.textContent = `Kanal ${currentChannel}`;
+                    playStaticNoise();
+                }, 3000); // Hochfahr-Animation dauert 3 Sekunden
+            } else {
+                powerButton.textContent = "Ein";
+                powerButton.classList.remove('on');
+                powerButton.classList.add('off');
+                display.classList.add('off');
+                display.textContent = "";
+                startupSequence.classList.remove('hidden');
+                stopStaticNoise();
+            }
+        });
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                channels[currentChannel].push(audio);
+                audioChunks = [];
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            pttButton.style.backgroundColor = '#ff0000';
+            playBeep();
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            isRecording = false;
+            pttButton.style.backgroundColor = '#cc0000';
+        }
+
+        function playBeep() {
+            const beep = new Audio('sepura_radio.mp3');
+            beep.play();
+        }
+
+        function playStaticNoise() {
+            const noise = new Audio('static_noise.mp3'); 
+            noise.loop = true;
+            noise.play();
+        }
+
+        function stopStaticNoise() {
+            const noise = document.querySelector('audio[loop]');
+            if (noise) {
+                noise.pause();
+                noise.currentTime = 0;
+            }
+        }
+
+        pttButton.addEventListener('pttButton.addEventListener('mousedown', () => {
+            if (isOn && !isRecording) {
+                startRecording();
+            }
         });
 
         pttButton.addEventListener('mouseup', () => {
-            console.log(`Übertragung auf Kanal ${currentChannel} beendet`);
-            // Hier könnte eine Funktion eingebunden werden, um die Aufnahme zu beenden
+            if (isOn && isRecording) {
+                stopRecording();
+            }
         });
 
         document.addEventListener('keydown', (event) => {
-            if (event.altKey) {
-                console.log(`Sende auf Kanal ${currentChannel}`);
-                // Hier könnte eine Funktion eingebunden werden, um die Aufnahme zu starten
+            if (event.altKey && isOn && !isRecording) {
+                startRecording();
             }
         });
 
         document.addEventListener('keyup', (event) => {
-            if (event.altKey) {
-                console.log(`Übertragung auf Kanal ${currentChannel} beendet`);
-                // Hier könnte eine Funktion eingebunden werden, um die Aufnahme zu beenden
+            if (event.altKey && isOn && isRecording) {
+                stopRecording();
             }
         });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && isOn) {
+                const lastMessage = channels[currentChannel][channels[currentChannel].length - 1];
+                if (lastMessage) {
+                    lastMessage.play();
+                }
+            }
+        });
+
+        if (isOn) {
+            playStaticNoise();
+        }
     </script>
 </body>
 </html>
