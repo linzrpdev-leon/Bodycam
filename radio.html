@@ -30,10 +30,11 @@
             background: transparent;
             cursor: pointer;
         }
-        .button.channel-1 { top: 150px; left: 50px; width: 60px; height: 60px; }
-        .button.channel-2 { top: 150px; left: 120px; width: 60px; height: 60px; }
-        .button.channel-3 { top: 150px; left: 190px; width: 60px; height: 60px; }
-        .button.channel-4 { top: 150px; left: 260px; width: 60px; height: 60px; }
+        /* Beispielhafte Positionen, die du entsprechend dem tatsächlichen Bild anpassen solltest */
+        .button.channel-1 { top: 90px; left: 50px; width: 60px; height: 60px; }
+        .button.channel-2 { top: 90px; left: 120px; width: 60px; height: 60px; }
+        .button.channel-3 { top: 90px; left: 190px; width: 60px; height: 60px; }
+        .button.channel-4 { top: 90px; left: 260px; width: 60px; height: 60px; }
         .button.record { bottom: 20px; left: 150px; width: 60px; height: 60px; }
         .display {
             position: absolute;
@@ -51,7 +52,7 @@
 </head>
 <body>
     <div class="container">
-        <img src="sepura-radio.png" alt="Sepura Funkgerät">
+        <img src="https://i.ibb.co/bz00HHD/E65768-removebg-preview.png" alt="Sepura Funkgerät">
         <button class="button channel-1" data-channel="1"></button>
         <button class="button channel-2" data-channel="2"></button>
         <button class="button channel-3" data-channel="3"></button>
@@ -60,7 +61,7 @@
         <div class="display" id="messages"></div>
     </div>
 
-    <audio id="staticSound" src="https://example.com/static_noise.mp3"></audio>
+    <audio id="staticSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
     <audio id="beepSound" src="sepura_radio.mp3"></audio>
 
     <script>
@@ -149,4 +150,28 @@
             button.addEventListener('click', () => {
                 const channel = button.getAttribute('data-channel');
                 if (channel) {
-                    handle
+                    handleChannelSelection(channel);
+                } else {
+                    if (!isRecording) {
+                        startRecording();
+                    } else {
+                        stopRecording();
+                    }
+                }
+            });
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.altKey && !isRecording) {
+                startRecording();
+            }
+        });
+
+        document.addEventListener('keyup', event => {
+            if (event.altKey && isRecording) {
+                stopRecording();
+            }
+        });
+    </script>
+</body>
+</html>
